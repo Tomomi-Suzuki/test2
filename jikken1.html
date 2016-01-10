@@ -1,0 +1,337 @@
+﻿<!DOCTYPE>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>TEST</title>
+    <script src="jquery-1.7.1.min.js"></script>
+    <script type="text/javascript" src="three.min.js"></script>
+    <script type="text/javascript" src="fileLink.js"></script>
+    <!--<script type="text/javascript" src="thview_soundGSV.js"></script>-->
+    <!--<script type="text/javascript" src="thview.js"></script>-->
+
+    <script type="text/javascript">
+        /* 結果を保持する配列 */
+        var selectAns = new Array();
+        for (var i = 0; i < 10; ++i) {
+            selectAns[i] = new Array();
+        }
+
+        /* 音声ファイルの読み込み */
+        var filePlaying = 0;
+        var playNum = 0;
+        var ptnPlaying = 0;
+        var audioFile = new Array();
+
+        var point = new Array();
+        point[0] = new Array("111", "110", "100", "101", "001", "011", "010", "000");   // ハミング経路
+        point[1] = new Array("111", "001", "010", "100", "011", "101", "110", "000");   // ランダム経路
+        var audioFile = new Array();
+        audioFile[0] = "sound/3srcs/ho1000_sp_f120_sp_m240_sw";
+        audioFile[1] = "sound/outside/1a/1a_sw";
+        var array = new Array();
+
+        function iniFunc() {
+            loadSound();
+        }
+        var audioPlaying = false;
+
+        // Play/Pauseボタンを押すと再生，一時停止のときにはselectAnsに記録
+        function AudioButtonFunc(n_file) {
+            if (audioPlaying == false) {
+                for (var i = 0; i < array.length; ++i) {
+                    array[i].loop = true;
+                    array[i].play();
+                }
+                for (var i = 0; i < array.length; ++i) {
+                    array[i].volume = 0;
+                }
+                array[playNum].volume = 1.0;
+                audioPlaying = true;
+            } else {
+                for (var i = 0; i < array.length; ++i) {
+                    array[i].pause();
+                }
+                audioPlaying = false;
+
+                // 念のため記録
+                selectAns[filePlaying][ptnPlaying] = point[ptnPlaying][playNum];
+            }   // END if audioPlaying
+        }   // END AudioButtonFunc
+
+        // カーソル位置変更 => 音ファイル切り替え
+        function ChangeVolume() {
+            /* playNum: 再生するファイル番号 */
+            for (var i = 0; i < array.length; ++i) {
+                if (i == playNum) {
+                    array[i].volume = 1.0;
+                    console.log(point[ptnPlaying][i]);
+                } else {
+                    array[i].volume = 0.0;
+                }
+            }
+        }
+
+        // 音声ファイルの読み込み
+        function loadSound() {
+            readFile = audioFile[filePlaying];
+            console.log(readFile);
+            for (var i = 0; i < 8; ++i) {
+                var audioname = readFile + point[ptnPlaying][i] + ".wav";
+                array[i] = new Audio(audioname);
+            }
+            for (var i = 0; i < array.length; ++i) {
+                array[i].load();
+            }
+            audioPlaying = false;
+        }
+
+        // 矢印キーで再生ファイルを切り替え
+        function KeyDownFunc(inEvent) {
+            //    if (inEvent.keyCode == 37) {   // "←"が押されたとき
+            //        playNum = playNum - 1;
+            //        if (playNum < 0) {
+            //            playNum = 0;
+            //        }
+            //        ChangeVolume();
+            //    }   // if (inEvent.keyCode == 37) END
+            //    else if (inEvent.keyCode == 39) {   // "→"が押されたとき
+            //        playNum = playNum + 1;
+            //        if (playNum > array.length - 1) {
+            //            playNum = array.length - 1;
+            //        }   // if (playNum > array.length-1) END
+            //        ChangeVolume();
+            //    }   // else if (inEvent.keyCode == 39) END
+        }   // END function KeyDownFunc
+
+        // OKボタンを押すと選んだ選択肢が保存され，ptnPlayingが切り替わる
+        function OkButtonFunc() {
+            for (var i = 0; i < array.length; ++i) {
+                array[i].pause();
+            }
+            selectAns[filePlaying][ptnPlaying] = point[ptnPlaying][playNum];
+            if (ptnPlaying == 0) {
+                ptnPlaying = 1;
+                loadSound();
+            } else if (ptnPlaying == 1) {
+                ptnPlaying = 0;
+            }   // END if ptnPlaying
+        }   // END OkButtonFunc
+
+        // 選択肢が選ばれたら回答を記録
+        function saveAnsFunc(filePlaying, n_q) {
+            var filePlaying, n_q;
+            if (filePlaying < 10) {
+                var nameEf = "selectEf0" + filePlaying;
+                var nameMv = "selectMv0" + filePlaying;
+            } else {
+                var idEf = "selectEf" + filePlaying;
+                var idMv = "selectMv" + filePlaying;
+            }
+            nameMv = nameMv + "_" + ptnPlaying;
+            var idEf = document.getElementById(nameEf);
+            var idMv = document.getElementById(nameMv);
+            if (n_q == 1) {
+                selectAns[filePlaying][2] = idEf.options[idEf.selectedIndex].value;
+
+            } else if (n_q == 2) {
+                selectAns[filePlaying][3 + ptnPlaying] = idMv.options[idMv.selectedIndex].value;
+            }
+        }   // END saveAnsFunc
+
+        // 名前の登録
+        function saveNameFunc() {
+            selectAns[0] = document.nameInput.txtb.value;
+            console.log(selectAns);
+        }   // END saveAnsFunc
+
+        // 各ファイルが終わったら回答漏れがないか確認，なければ次の音データを読み込み
+        function saveArrayFunc() {
+            for (var i = 0; i < 4; ++i) {
+                if (selectAns[filePlaying][i] == null) {
+                    alert("回答が済んでいません!");
+                }
+            }
+            filePlaying = filePlaying + 1;
+            loadSound();
+        }   // END saveAnsFunc
+
+        // 回答をファイルにして保存
+        function saveFunc() {
+            var data = selectAns;
+            if (data.length) {
+                var obj = document.getElementById("anchor");
+                obj.href = "data:application/octet-stream," +
+                           encodeURIComponent(data);
+                obj.innerHTML = "右クリックでリンク先を保存して下さい";
+            }
+        }   // END saveFunc
+
+        // スライダーが動かされたら選んでいる場所を表示
+        function showValue(filePlaying, ptnPlaying) {
+            var filePlaying, ptnPlaying;
+            if (filePlaying < 10) {
+                var nameSld = "slider0" + filePlaying;
+            } else {
+                var nameSld = "slider" + filePlaying;
+            }
+            nameSld = nameSld + "_" + ptnPlaying;
+            var idSld = document.getElementById(nameSld);
+            playNum = idSld.value;
+            ChangeVolume();
+        }
+
+        // ------------------------------------------------------------
+        // リッスンを開始する
+        // ------------------------------------------------------------
+        // イベントリスナーに対応している
+        if (document.addEventListener) {
+            // マウスカーソルを移動すると実行されるイベント
+            //document.addEventListener("mousemove", ChangeVolume);
+            // キーボードを押したときに実行されるイベント
+            document.addEventListener("keypress", KeyDownFunc);
+
+            // アタッチイベントに対応している
+        } else if (document.attachEvent) {
+            // マウスカーソルを移動すると実行されるイベント
+            //document.attachEvent("onmousemove", ChangeVolume);
+            // キーボードを押したときに実行されるイベント
+            document.attachEvent("onkeydown", KeyDownFunc);
+        }
+    </script>
+</head>
+
+<body onload="iniFunc()">
+    <h3 style="padding-left:1em">聴取実験</h3>
+    <form name="nameInput">
+        Name：<input type="text" name="txtb" value=""><br>
+        <input type="button" value="OK" onclick="saveNameFunc(0)">
+        <input type="button" value="Clear" onclick="clearNameFunc()"><br>
+    </form>
+
+    <!------------Data 1------------>
+    <hr align="left" width="900" color="#ffc8c8">
+    <h3 style="padding-left:10pt">Data 1</h3>
+    <!--音の再生・選択-->
+    <table border="1" width="700" height="100">
+        <tr>
+            <!--#1-->
+            <td>
+                <script language="JavaScript">
+                    document.write("#1".bold())
+                </script>
+
+                <div id="buttonbar01_1">
+                    <button id="playButton01_1" onclick="AudioButtonFunc(1,1)">Play/Stop</button>
+                    <button id="okButton01_1" onclick="OkButtonFunc(1,1)">OK!</button>
+                </div>
+                <p style="line-height:40pt" />
+                <input id="slider01_1" type="range" min="0" max="7" step="1" value="0" onchange="showValue(1,1)" />
+                <p>Q. 途中で音源が移動したように聞こえましたか？</p>
+                <select id="selectMv01_1" onchange="saveAnsFunc(1,2)">
+                    <option value="">*選んでください</option>
+                    <option value="1">はい</option>
+                    <option value="0">いいえ</option>
+                </select>
+            </td>
+            <!--#2-->
+            <td>
+                <script language="JavaScript">
+                    document.write("#2".bold())
+                </script>
+
+                <div id="buttonbar01_2">
+                    <button id="playButton01_2" onclick="AudioButtonFunc(1,2)">Play/Stop</button>
+                    <button id="okButton01_2" onclick="OkButtonFunc(1,2)">OK!</button>
+                </div>
+                <p style="line-height:40pt" />
+                <input id="slider01_2" type="range" min="0" max="7" step="1" value="0" onchange="showValue(1,2)" />
+                <p>Q. 途中で音源が移動したように聞こえましたか？</p>
+                <select id="selectMv01_2" onchange="saveAnsFunc(1,2)">
+                    <option value="">*選んでください</option>
+                    <option value="1">はい</option>
+                    <option value="0">いいえ</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <!--評価回答-->
+    <form name="selectbox">
+        <p>Q. 聞きやすい場所が選びやすかったのはどちらでしたか？</p>
+        <select id="selectEf01" onchange="saveAnsFunc(1,1)">
+            <option value="">*選んでください</option>
+            <option value="1">#1</option>
+            <option value="2">#2</option>
+            <option value="0">どちらも変わらなかった</option>
+        </select>
+    </form>
+    <!--結果を書き込み-->
+    <button onclick="saveArrayFunc();">Answer1 Save</button>
+    <a id="saveArray" href=""></a>
+    <p class="ls_normal"></p>
+
+    <!------------Data 2------------>
+    <hr align="left" width="900" color="#ffc8c8">
+    <h3 style="padding-left:10pt">Data 2</h3>
+    <!--音の再生・選択-->
+    <table border="1" width="700" height="100">
+        <tr>
+            <!--#1-->
+            <td>
+                <script language="JavaScript">
+                    document.write("#1".bold())
+                </script>
+
+                <div id="buttonbar01_1">
+                    <button id="playButton02_1" onclick="AudioButtonFunc(2,1)">Play/Stop</button>
+                    <button id="okButton02_1" onclick="OkButtonFunc(2,1)">OK!</button>
+                </div>
+                <p style="line-height:40pt" />
+                <input id="slider02_1" type="range" min="0" max="7" step="1" value="0" onchange="showValue(2,1)" />
+                <p>Q. 途中で音源が移動したように聞こえましたか？</p>
+                <select id="selectMv02_1" onchange="saveAnsFunc(2,2)">
+                    <option value="">*選んでください</option>
+                    <option value="1">はい</option>
+                    <option value="0">いいえ</option>
+                </select>
+            </td>
+            <!--#2-->
+            <td>
+                <script language="JavaScript">
+                    document.write("#2".bold())
+                </script>
+
+                <div id="buttonbar01_2">
+                    <button id="playButton02_2" onclick="AudioButtonFunc(2,2)">Play/Stop</button>
+                    <button id="okButton02_2" onclick="OkButtonFunc(2,2)">OK!</button>
+                </div>
+                <p style="line-height:40pt" />
+                <input id="slider02_2" type="range" min="0" max="7" step="1" value="0" onchange="showValue(2,2)" />
+                <p>Q. 途中で音源が移動したように聞こえましたか？</p>
+                <select id="selectMv02_2" onchange="saveAnsFunc(2,2)">
+                    <option value="">*選んでください</option>
+                    <option value="1">はい</option>
+                    <option value="0">いいえ</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <form name="selectbox">
+        <p>Q. 聞きやすい場所が選びやすかったのはどちらでしたか？</p>
+        <select id="selectEf02" onchange="saveAnsFunc(2,1)">
+            <option value="">*選んでください</option>
+            <option value="1">#1</option>
+            <option value="2">#2</option>
+            <option value="0">どちらも変わらなかった</option>
+        </select>
+    </form>
+    <!--結果を書き込み-->
+    <button onclick="saveArrayFunc();">Answer2 Save</button>
+    <a id="saveArray" href=""></a>
+    <p class="ls_normal"></p>
+
+    <!--最後に回答をファイルに保存-->
+    <p class="ls_double"><br /></p>
+    <button onclick="saveFunc();">FINISH</button>
+    <a id="anchor" href=""></a>
+</body>
+</html>
